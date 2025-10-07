@@ -34,9 +34,9 @@ export function DashboardPage() {
 	useEffect(() => {
 		const checkAbsenStatus = async () => {
 			try {
-				const response = await apiClient.get(
-					`/absensi/status?_=${new Date().getTime()}`
-				);
+				const timezoneOffset = new Date().getTimezoneOffset();
+				const params = { tzOffset: timezoneOffset };
+				const response = await apiClient.get(`/absensi/status`, { params });
 				setAbsenStatus(response.data.status);
 				if (response.data.status === "sudah_absen") {
 					setAbsensiData(response.data.data);
@@ -72,12 +72,14 @@ export function DashboardPage() {
 
 		setIsSubmitting(true);
 		try {
+			const timezoneOffset = new Date().getTimezoneOffset();
 			const payload = {
 				koordinat: {
 					latitude: location.latitude,
 					longitude: location.longitude,
 				},
 				waktuAbsen: new Date().toISOString(),
+				tzOffset: timezoneOffset,
 			};
 
 			const response = await apiClient.post("/absensi", payload);
@@ -222,7 +224,7 @@ export function DashboardPage() {
 	};
 
 	return (
-		<div className="bg-slate-50 p-4 sm:p-6 lg:p-8">
+		<div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
 			<header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8">
 				<div>
 					<h1 className="text-2xl sm:text-3xl font-bold text-primary-dark">
