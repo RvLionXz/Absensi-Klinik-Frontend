@@ -23,14 +23,26 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { Loader2, User, MapPin, Clock, CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import {
+	Loader2,
+	User,
+	MapPin,
+	Clock,
+	CalendarIcon,
+	Download,
+} from "lucide-react";
+import { format, getYear, getMonth } from "date-fns";
+import { id } from "date-fns/locale";
 
 export function AdminAbsensiPage() {
 	const [absensiData, setAbsensiData] = useState([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [filter, setFilter] = useState("today");
 	const [selectedDate, setSelectedDate] = useState(new Date());
+	const [selectedMonth, setSelectedMonth] = useState(new Date());
+
+	const currentYear = getYear(new Date());
+	const months = Array.from({ length: 12 }, (_, i) => new Date(0, i));
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -38,6 +50,7 @@ export function AdminAbsensiPage() {
 			try {
 				const timezoneOffset = new Date().getTimezoneOffset();
 				const params = { filter, tzOffset: timezoneOffset };
+
 				if (filter === "date") {
 					if (!selectedDate) {
 						setAbsensiData([]);
@@ -45,6 +58,9 @@ export function AdminAbsensiPage() {
 						return;
 					}
 					params.date = format(selectedDate, "yyyy-MM-dd");
+				} else if (filter === "month") {
+					params.month = getMonth(selectedMonth) + 1;
+					params.year = getYear(selectedMonth);
 				}
 
 				const response = await apiClient.get("/absensi", { params });
@@ -57,7 +73,31 @@ export function AdminAbsensiPage() {
 			}
 		};
 		fetchData();
-	}, [filter, selectedDate]);
+	}, [filter, selectedDate, selectedMonth]);
+
+	const handleDownload = async () => {
+		const month = getMonth(selectedMonth) + 1;
+		const year = getYear(selectedMonth);
+		try {
+			const response = await apiClient.get("/absensi/export", {
+				params: { month, year },
+				responseType: "blob",
+			});
+			const url = window.URL.createObjectURL(new Blob([response.data]));
+			const link = document.createElement("a");
+			link.href = url;
+			const monthName = format(selectedMonth, "MMMM", { locale: id });
+			link.setAttribute(
+				"download",
+				`Laporan Absensi - ${monthName} ${year}.xlsx`
+			);
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+		} catch (error) {
+			console.error("Gagal mengunduh laporan:", error);
+		}
+	};
 
 	const formatDate = (dateString) => {
 		const date = new Date(dateString);
@@ -84,10 +124,8 @@ export function AdminAbsensiPage() {
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="today">Hari Ini</SelectItem>
-								<SelectItem value="week">Minggu Ini</SelectItem>
-								<SelectItem value="month">Bulan Ini</SelectItem>
+								<SelectItem value="month">Per Bulan</SelectItem>
 								<SelectItem value="date">Per Tanggal</SelectItem>
-								<SelectItem value="all">Semua</SelectItem>
 							</SelectContent>
 						</Select>
 						{filter === "date" && (
@@ -99,7 +137,7 @@ export function AdminAbsensiPage() {
 									>
 										<CalendarIcon className="mr-2 h-4 w-4" />
 										{selectedDate ? (
-											format(selectedDate, "PPP")
+											format(selectedDate, "PPP", { locale: id })
 										) : (
 											<span>Pilih tanggal</span>
 										)}
@@ -116,6 +154,29 @@ export function AdminAbsensiPage() {
 									/>
 								</PopoverContent>
 							</Popover>
+						)}
+						{filter === "month" && (
+							<div className="flex gap-2">
+								<Select
+									onValueChange={(val) =>
+										setSelectedMonth(new Date(currentYear, val))
+									}
+								>
+									<SelectTrigger className="w-[180px]">
+										<SelectValue placeholder="Pilih Bulan" />
+									</SelectTrigger>
+									<SelectContent>
+										{months.map((month, index) => (
+											<SelectItem key={index} value={index}>
+												{format(month, "MMMM", { locale: id })}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<Button onClick={handleDownload}>
+									<Download className="w-4 h-4 mr-2" /> Unduh Laporan
+								</Button>
+							</div>
 						)}
 					</div>
 				</div>
