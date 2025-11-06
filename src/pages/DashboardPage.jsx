@@ -34,9 +34,9 @@ export function DashboardPage() {
 	useEffect(() => {
 		const checkAbsenStatus = async () => {
 			try {
-				const timezoneOffset = new Date().getTimezoneOffset();
-				const params = { tzOffset: timezoneOffset };
-				const response = await apiClient.get(`/absensi/status`, { params });
+				const response = await apiClient.get(
+					`/absensi/status?_=${new Date().getTime()}`
+				);
 				setAbsenStatus(response.data.status);
 				if (response.data.status === "sudah_absen") {
 					setAbsensiData(response.data.data);
@@ -72,14 +72,12 @@ export function DashboardPage() {
 
 		setIsSubmitting(true);
 		try {
-			const timezoneOffset = new Date().getTimezoneOffset();
 			const payload = {
 				koordinat: {
 					latitude: location.latitude,
 					longitude: location.longitude,
 				},
-				waktuAbsen: new Date().toISOString(),
-				tzOffset: timezoneOffset,
+				waktuAbsen: new Date(),
 			};
 
 			const response = await apiClient.post("/absensi", payload);
@@ -103,11 +101,7 @@ export function DashboardPage() {
 	};
 
 	const formatDate = (dateString) => {
-		const date = new Date(dateString);
-		if (!/Z|[+-]\d{2}:\d{2}$/.test(dateString)) {
-			date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
-		}
-		return date.toLocaleString("id-ID", {
+		return new Date(dateString).toLocaleString("id-ID", {
 			dateStyle: "medium",
 			timeStyle: "short",
 		});
@@ -224,7 +218,7 @@ export function DashboardPage() {
 	};
 
 	return (
-		<div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
+		<div className="bg-slate-50 p-4 sm:p-6 lg:p-8">
 			<header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8">
 				<div>
 					<h1 className="text-2xl sm:text-3xl font-bold text-primary-dark">

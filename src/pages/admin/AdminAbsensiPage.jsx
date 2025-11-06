@@ -48,8 +48,7 @@ export function AdminAbsensiPage() {
 		const fetchData = async () => {
 			setIsLoading(true);
 			try {
-				const timezoneOffset = new Date().getTimezoneOffset();
-				const params = { filter, tzOffset: timezoneOffset };
+				const params = { filter };
 
 				if (filter === "date") {
 					if (!selectedDate) {
@@ -100,11 +99,7 @@ export function AdminAbsensiPage() {
 	};
 
 	const formatDate = (dateString) => {
-		const date = new Date(dateString);
-		if (!/Z|[+-]\d{2}:\d{2}$/.test(dateString)) {
-			date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
-		}
-		return date.toLocaleString("id-ID", {
+		return new Date(dateString).toLocaleString("id-ID", {
 			dateStyle: "medium",
 			timeStyle: "short",
 		});
